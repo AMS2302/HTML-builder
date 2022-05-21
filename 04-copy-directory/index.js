@@ -9,10 +9,7 @@ function errorCallback(error) {
 };
 
 function copyDir() {
-  fs.readdir(__dirname, (error) => {
-    errorCallback(error);
-    fs.mkdir(dest, { recursive: true }, errorCallback);
-  });
+  fs.mkdir(dest, { recursive: true }, errorCallback);
 
   fs.readdir(src, (error, data) => {
     errorCallback(error);
