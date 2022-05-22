@@ -1,9 +1,11 @@
+const fs = require('fs');
 const path = require('path');
 const { mkdir, readdir, readFile, writeFile } = require('fs/promises');
 
 const distPath = path.join(__dirname, 'project-dist');
 const templatePath = path.join(__dirname, 'template.html');
 const componentsPath = path.join(__dirname, 'components');
+const stylesPath = path.join(__dirname, 'styles');
 
 async function createHtml() {
   try {
@@ -29,8 +31,31 @@ async function createHtml() {
   }
 }
 
+async function mergeStyles() {
+  try {
+    const distStylePath = path.join(distPath, 'style.css');
+    await writeFile(distStylePath, '', 'utf8');
+    const styles = await readdir(stylesPath, 'utf8', { withFileTypes: true });
+    for (const file of styles) {
+      const filePath = path.join(stylesPath, file);
+      if (path.extname(filePath) === '.css') {
+        const stream = fs.createReadStream(filePath, 'utf-8');
+        let data = '';
+        stream.on('error', error => { if (error) throw error });
+        stream.on('data', chunk => data += chunk);
+        stream.on('end', () => {
+          fs.appendFile(distStylePath, `${data}\r\n`, error => { if (error) throw error; });
+        });
+      }
+    }
+  } catch (error) {
+    console.error(error);
+  }
+}
+
 function createDist() {
   createHtml();
+  mergeStyles();
 };
 
 createDist();
