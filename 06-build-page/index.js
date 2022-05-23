@@ -1,11 +1,12 @@
 const fs = require('fs');
 const path = require('path');
-const { mkdir, readdir, readFile, writeFile } = require('fs/promises');
+const { mkdir, readdir, readFile, writeFile, appendFile, stat, copyFile } = require('fs/promises');
 
 const distPath = path.join(__dirname, 'project-dist');
 const templatePath = path.join(__dirname, 'template.html');
 const componentsPath = path.join(__dirname, 'components');
 const stylesPath = path.join(__dirname, 'styles');
+const assetsPath = path.join(__dirname, 'assets');
 
 async function createHtml() {
   try {
@@ -43,8 +44,8 @@ async function mergeStyles() {
         let data = '';
         stream.on('error', error => { if (error) throw error });
         stream.on('data', chunk => data += chunk);
-        stream.on('end', () => {
-          fs.appendFile(distStylePath, `${data}\r\n`, error => { if (error) throw error; });
+        stream.on('end', async () => {
+          await appendFile(distStylePath, `${data}\r\n`);
         });
       }
     }
@@ -53,9 +54,39 @@ async function mergeStyles() {
   }
 }
 
+async function copyDir(src) {
+  try {
+    const defaultDistFolder = path.join(distPath, path.basename(src));
+
+    async function init(src, distFolder = defaultDistFolder) {
+      try {
+        await mkdir(distFolder, { recursive: true });
+        const srcItems = await readdir(src, 'utf8', { withFileTypes: true });
+        for (const item of srcItems) {
+          const itemPath = path.join(src, item);
+          const stats = await stat(itemPath);
+          if (stats.isDirectory()) {
+            await init(itemPath, path.join(distFolder, item));
+          } else if (stats.isFile()) {
+            await copyFile(itemPath, path.join(distFolder, path.basename(item)));
+          }
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    await init(src);
+
+  } catch (error) {
+    console.error(error);
+  }
+}
+
 function createDist() {
   createHtml();
   mergeStyles();
+  copyDir(assetsPath);
 };
 
 createDist();
