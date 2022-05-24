@@ -12,7 +12,7 @@ async function createHtml() {
   try {
     await mkdir(distPath, { recursive: true });
     const templateData = await readFile(templatePath, 'utf8');
-    const templateStrings = templateData.split('\r\n');
+    const templateStrings = templateData.split(/\n/g);
     const templateTags = templateStrings.map(item => item.trim());
     const components = await readdir(componentsPath, 'utf8', { withFileTypes: true });
     for (const file of components) {
@@ -26,7 +26,7 @@ async function createHtml() {
         templateStrings[tagIndex] = fileData;
       }
     }
-    await writeFile(path.join(distPath, 'index.html'), templateStrings.join('\r\n'), 'utf8');
+    await writeFile(path.join(distPath, 'index.html'), templateStrings.join('\n'), 'utf8');
   } catch (error) {
     console.error(error);
   }
